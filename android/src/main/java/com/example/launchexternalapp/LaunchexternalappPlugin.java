@@ -6,34 +6,24 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
-
 import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.content.pm.PackageManager;
 
-/** LaunchExternalAppPlugin */
-public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin {
-
-  private static MethodChannel channel;
+public class LaunchexternalappPlugin implements FlutterPlugin, MethodCallHandler {
+  private MethodChannel channel;
   private Context context;
 
-  public LaunchexternalappPlugin() {
-    
-  }
-  private LaunchexternalappPlugin(Context context) {
-    this.context = context;
-  }
-
   @Override
-  public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
+  public void onAttachedToEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
     context = binding.getApplicationContext();
     channel = new MethodChannel(binding.getBinaryMessenger(), "launch_vpn");
     channel.setMethodCallHandler(this);
   }
 
   @Override
-  public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+  public void onDetachedFromEngine(@NonNull FlutterPlugin.FlutterPluginBinding binding) {
     channel.setMethodCallHandler(null);
   }
 
@@ -49,11 +39,8 @@ public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin
         result.success(isAppInstalled(packageName));
       }
     } else if (call.method.equals("openApp")) {
-
       String packageName = call.argument("package_name");
-
       result.success(openApp(packageName, call.argument("open_store").toString()));
-
     } else {
       result.notImplemented();
     }
@@ -72,17 +59,16 @@ public class LaunchexternalappPlugin implements MethodCallHandler, FlutterPlugin
     if (isAppInstalled(packageName)) {
       Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
       if (launchIntent != null) {
-        // null pointer check in case package name was not found
         launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(launchIntent);
         return "app_opened";
       }
     } else {
-      if (openStore != "false") {
-        Intent intent1 = new Intent(Intent.ACTION_VIEW);
-        intent1.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent1.setData(android.net.Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
-        context.startActivity(intent1);
+      if (!"false".equals(openStore)) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.setData(android.net.Uri.parse("https://play.google.com/store/apps/details?id=" + packageName));
+        context.startActivity(intent);
         return "navigated_to_store";
       }
     }
